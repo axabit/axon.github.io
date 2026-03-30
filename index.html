@@ -9,13 +9,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #04090f;
-  --blue: #7ecfff;
-  --blue-dim: #2a6fa8;
-  --blue-faint: rgba(126,207,255,0.04);
-  --text: #9ed8f5;
-  --muted: #1e4a66;
-  --border: #0c2233;
+  --bg: #000000;
+  --blue: #e8e8e8;
+  --blue-dim: #888888;
+  --blue-faint: rgba(232,232,232,0.04);
+  --text: #c0c0c0;
+  --muted: #444444;
+  --border: #1a1a1a;
 }
 
 body {
@@ -28,7 +28,7 @@ body {
   cursor: none;
 }
 
-/* ─── Custom cursor: thin hollow circle ─── */
+/* ─── cursor ─── */
 #cur {
   position: fixed;
   width: 18px;
@@ -82,7 +82,7 @@ body::after {
   position: fixed;
   left: 0; right: 0;
   height: 1px;
-  background: rgba(126,207,255,0.2);
+  background: rgba(232,232,232,0.2);
   pointer-events: none;
   z-index: 498;
   opacity: 0;
@@ -101,7 +101,7 @@ body::after {
 .flash {
   position: fixed;
   inset: 0;
-  background: var(--blue);
+  background: #ffffff;
   opacity: 0;
   pointer-events: none;
   z-index: 497;
@@ -144,7 +144,7 @@ body::after {
   content: attr(data-t);
   position: absolute;
   inset: 0;
-  color: #f05a7a;
+  color: #aaaaaa;
   opacity: 0;
   animation: ghostR 3.5s steps(1) infinite;
 }
@@ -153,7 +153,7 @@ body::after {
   content: attr(data-t);
   position: absolute;
   inset: 0;
-  color: #5af0e0;
+  color: #666666;
   opacity: 0;
   animation: ghostC 4.2s steps(1) infinite;
 }
@@ -330,7 +330,7 @@ body::after {
 @keyframes barGlitch {
   0%,93%,96%,100%{border-color:var(--border)}
   94%{border-color:var(--blue-dim)}
-  95%{border-color:rgba(240,90,122,0.25)}
+  95%{border-color:rgba(180,180,180,0.25)}
 }
 
 .cmd-prompt { color:var(--blue-dim); font-size:11px; flex-shrink:0; }
@@ -395,6 +395,10 @@ body::after {
   <source src="Set Adrift.mp3" type="audio/mpeg">
 </audio>
 
+<audio id="clickSfx">
+  <source src="click.mp3" type="audio/mpeg">
+</audio>
+
 <!-- ══ Entry ══ -->
 <div id="entry">
   <div class="entry-word" data-t="axon">axon</div>
@@ -433,6 +437,13 @@ body::after {
 </div>
 
 <script>
+  // ─── Click sound ───
+  const clickSfx = document.getElementById('clickSfx');
+  document.addEventListener('click', () => {
+    clickSfx.currentTime = 0;
+    clickSfx.play().catch(() => {});
+  });
+
   // ─── Cursor ───
   const cur = document.getElementById('cur');
 
@@ -441,19 +452,14 @@ body::after {
     cur.style.top  = e.clientY + 'px';
   });
 
-  // Hover detection for interactive elements
   const hoverTargets = 'a, button, input, .srow, .cmd-bar, .cmd-input, [onclick]';
 
   document.addEventListener('mouseover', e => {
-    if (e.target.closest(hoverTargets)) {
-      cur.classList.add('hover');
-    }
+    if (e.target.closest(hoverTargets)) cur.classList.add('hover');
   });
 
   document.addEventListener('mouseout', e => {
-    if (e.target.closest(hoverTargets)) {
-      cur.classList.remove('hover');
-    }
+    if (e.target.closest(hoverTargets)) cur.classList.remove('hover');
   });
 
   // ─── Entry click ───
@@ -498,7 +504,6 @@ body::after {
     out.style.display = 'block';
   });
 
-  // click main area = focus input
   main.addEventListener('click', e => {
     if (e.target !== inp) inp.focus();
   });
