@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>axon</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #04090f;
+  --blue: #7ecfff;
+  --blue-dim: #2a6fa8;
+  --blue-faint: rgba(126,207,255,0.04);
+  --text: #9ed8f5;
+  --muted: #1e4a66;
+  --border: #0c2233;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  cursor: none;
+}
+
+/* ─── Custom cursor: thin hollow circle ─── */
+#cur {
+  position: fixed;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--blue);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.15s ease, height 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+#cur.hover {
+  width: 28px;
+  height: 28px;
+  border-color: var(--blue);
+  opacity: 0.6;
+}
+
+/* ─── Scanlines ─── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 4px);
+  pointer-events: none;
+  z-index: 500;
+}
+
+/* ─── Noise ─── */
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 499;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  animation: noiseAnim 0.1s steps(1) infinite;
+}
+@keyframes noiseAnim {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -50px 30px; }
+  50%  { background-position: 40px -20px; }
+  75%  { background-position: -30px -40px; }
+  100% { background-position: 20px 50px; }
+}
+
+/* ─── Global RGB tear ─── */
+.tear {
+  position: fixed;
+  left: 0; right: 0;
+  height: 1px;
+  background: rgba(126,207,255,0.2);
+  pointer-events: none;
+  z-index: 498;
+  opacity: 0;
+  animation: tearAnim 10s steps(1) infinite;
+}
+@keyframes tearAnim {
+  0%,78%,84%,100% { opacity:0; transform:translateX(0); }
+  79% { opacity:1; top:28%; transform:translateX(-4px); }
+  80% { opacity:1; top:28%; transform:translateX(4px); }
+  81% { opacity:1; top:72%; transform:translateX(-2px); }
+  82% { opacity:0.5; top:50%; transform:translateX(0); }
+  83% { opacity:0; }
+}
+
+/* ─── Flash overlay ─── */
+.flash {
+  position: fixed;
+  inset: 0;
+  background: var(--blue);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 497;
+  mix-blend-mode: screen;
+  animation: flashAnim 8s steps(1) infinite;
+}
+@keyframes flashAnim {
+  0%,91%,93%,95%,100% { opacity:0; }
+  92% { opacity:0.05; }
+  94% { opacity:0.02; }
+}
+
+/* ══════════════════════════════════════
+   ENTRY SCREEN
+══════════════════════════════════════ */
+#entry {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  background: var(--bg);
+}
+
+.entry-word {
+  font-size: clamp(56px, 14vw, 110px);
+  font-weight: 700;
+  color: var(--blue);
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  position: relative;
+  animation: nameGlitch 4s steps(1) infinite;
+}
+
+/* red ghost */
+.entry-word::before {
+  content: attr(data-t);
+  position: absolute;
+  inset: 0;
+  color: #f05a7a;
+  opacity: 0;
+  animation: ghostR 3.5s steps(1) infinite;
+}
+/* cyan ghost */
+.entry-word::after {
+  content: attr(data-t);
+  position: absolute;
+  inset: 0;
+  color: #5af0e0;
+  opacity: 0;
+  animation: ghostC 4.2s steps(1) infinite;
+}
+
+@keyframes nameGlitch {
+  0%,87%,91%,100% { transform:none; filter:none; }
+  88% { transform:translate(-3px,0) skewX(-2deg); filter:brightness(1.2); }
+  89% { transform:translate(3px,0) skewX(2deg); }
+  90% { transform:translate(-1px,0); filter:none; }
+}
+@keyframes ghostR {
+  0%,87%,92%,100% { opacity:0; transform:translate(0); }
+  88% { opacity:0.7; transform:translate(4px,-1px); clip-path:polygon(0 15%,100% 15%,100% 45%,0 45%); }
+  89% { opacity:0.5; transform:translate(-2px,1px); clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%); }
+  91% { opacity:0; }
+}
+@keyframes ghostC {
+  0%,82%,87%,100% { opacity:0; transform:translate(0); }
+  83% { opacity:0.6; transform:translate(-3px,1px); clip-path:polygon(0 40%,100% 40%,100% 70%,0 70%); }
+  85% { opacity:0.4; transform:translate(3px,-1px); clip-path:polygon(0 10%,100% 10%,100% 30%,0 30%); }
+  86% { opacity:0; }
+}
+
+.click-hint {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  animation: hintBlink 1.6s step-end infinite;
+}
+@keyframes hintBlink {
+  0%,100%{opacity:1} 50%{opacity:0.1}
+}
+
+/* transition out */
+#entry.out {
+  animation: entryOut 0.4s steps(8) forwards;
+}
+@keyframes entryOut {
+  0%   { opacity:1; filter:none; transform:none; }
+  15%  { filter:invert(1) brightness(2); transform:scaleY(1.02) translateX(2px); }
+  30%  { filter:brightness(4); transform:scaleY(0.98) translateX(-3px); }
+  50%  { opacity:0.7; filter:none; transform:scaleX(1.01); }
+  70%  { opacity:0.3; filter:brightness(2); }
+  100% { opacity:0; }
+}
+
+/* ══════════════════════════════════════
+   MAIN SCREEN
+══════════════════════════════════════ */
+#main {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease 0.38s;
+}
+#main.on { opacity:1; pointer-events:all; }
+
+/* small name */
+.m-name {
+  font-size: 10px;
+  letter-spacing: 0.55em;
+  color: var(--muted);
+  text-transform: lowercase;
+  animation: subtleG 7s steps(1) infinite;
+}
+@keyframes subtleG {
+  0%,93%,100%{transform:none;opacity:1}
+  94%{transform:translateX(2px);opacity:0.6;filter:hue-rotate(40deg)}
+  95%{transform:translateX(-2px);opacity:0.9;filter:none}
+  96%{transform:none;opacity:1}
+}
+
+/* ─── Socials ─── */
+.socials {
+  display:flex;
+  flex-direction:column;
+  width: 240px;
+}
+
+.srow {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration:none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: none;
+  transition: color 0.12s;
+  position: relative;
+  animation: rowGlitch 12s steps(1) infinite;
+}
+
+.srow:first-child { border-top: 1px solid var(--border); }
+
+.srow:nth-child(1) { animation-delay: 0s; }
+.srow:nth-child(2) { animation-delay: 2.3s; }
+.srow:nth-child(3) { animation-delay: 5.1s; }
+.srow:nth-child(4) { animation-delay: 8.7s; }
+
+@keyframes rowGlitch {
+  0%,95%,98%,100%{transform:none;opacity:1}
+  96%{transform:translateX(2px);opacity:0.7}
+  97%{transform:translateX(-1px);opacity:1}
+}
+
+.srow:hover { color: var(--blue); }
+
+.srow:hover .s-val {
+  animation: valGlitch 0.25s steps(4);
+}
+@keyframes valGlitch {
+  0%{transform:none}25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-1px)}100%{transform:none}
+}
+
+.s-key {
+  font-size:10px;
+  letter-spacing:0.1em;
+  color: var(--border);
+  transition:color 0.12s;
+  width: 64px;
+}
+.srow:hover .s-key { color: var(--blue-dim); }
+
+.s-val { color:inherit; }
+
+.s-arr {
+  font-size:9px;
+  color:var(--border);
+  transition: color 0.12s, transform 0.15s;
+}
+.srow:hover .s-arr { color:var(--blue-dim); transform:translateX(3px); }
+
+/* ─── Divider with scan ─── */
+.scan-div {
+  width:100%;
+  height:1px;
+  background:var(--border);
+  position:relative;
+  overflow:hidden;
+}
+.scan-div::after {
+  content:'';
+  position:absolute;
+  top:0; left:-40%;
+  width:30%;
+  height:100%;
+  background:linear-gradient(90deg,transparent,var(--blue-dim),transparent);
+  animation:scan 5s linear infinite;
+}
+@keyframes scan { 0%{left:-30%} 100%{left:130%} }
+
+/* ─── Command bar ─── */
+.cmd-area { width:240px; }
+
+.cmd-bar {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--border);
+  padding:8px 12px;
+  background:var(--blue-faint);
+  animation:barGlitch 11s steps(1) infinite;
+  cursor: none;
+}
+@keyframes barGlitch {
+  0%,93%,96%,100%{border-color:var(--border)}
+  94%{border-color:var(--blue-dim)}
+  95%{border-color:rgba(240,90,122,0.25)}
+}
+
+.cmd-prompt { color:var(--blue-dim); font-size:11px; flex-shrink:0; }
+
+.cmd-input {
+  background:transparent;
+  border:none;
+  outline:none;
+  color:var(--blue);
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  flex:1;
+  caret-color:var(--blue);
+  cursor: none;
+}
+.cmd-input::placeholder { color:var(--muted); }
+
+.cmd-out {
+  border:1px solid var(--border);
+  border-top:none;
+  padding:8px 12px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.9;
+  display:none;
+  animation:fadeSlide 0.15s ease;
+}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+/* ─── Now playing ─── */
+.np {
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:0.12em;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  opacity:0;
+  transition:opacity 1.2s ease;
+  animation:subtleG 13s steps(1) infinite;
+}
+.np.show { opacity:1; }
+
+.np-dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background:var(--blue);
+  flex-shrink:0;
+  animation:npPulse 1.8s ease infinite;
+}
+@keyframes npPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.25;transform:scale(0.6)}}
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="flash"></div>
+<div class="tear"></div>
+<div id="cur"></div>
+
+<audio id="bgm" loop>
+  <source src="Set Adrift.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ══ Entry ══ -->
+<div id="entry">
+  <div class="entry-word" data-t="axon">axon</div>
+  <div class="click-hint">click to enter</div>
+</div>
+
+<!-- ══ Main ══ -->
+<div id="main">
+  <div class="m-name">axon</div>
+
+  <div class="socials">
+    <a class="srow" href="https://github.com/axabit" target="_blank">
+      <span class="s-key">github</span>
+      <span class="s-val">/axabit</span>
+      <span class="s-arr">›</span>
+    </a>
+    <a class="srow" href="https://discord.com/users/1487953445003722974" target="_blank">
+      <span class="s-key">discord</span>
+      <span class="s-val">ax._on</span>
+      <span class="s-arr">›</span>
+    </a>
+  </div>
+
+  <div class="cmd-area">
+    <div class="cmd-bar">
+      <span class="cmd-prompt">$</span>
+      <input class="cmd-input" id="cmdIn" type="text" placeholder="type a command..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="cmd-out" id="cmdOut"></div>
+  </div>
+
+  <div class="np" id="np">
+    <div class="np-dot"></div>
+    <span>set adrift</span>
+  </div>
+</div>
+
+<script>
+  // ─── Cursor ───
+  const cur = document.getElementById('cur');
+
+  document.addEventListener('mousemove', e => {
+    cur.style.left = e.clientX + 'px';
+    cur.style.top  = e.clientY + 'px';
+  });
+
+  // Hover detection for interactive elements
+  const hoverTargets = 'a, button, input, .srow, .cmd-bar, .cmd-input, [onclick]';
+
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverTargets)) {
+      cur.classList.add('hover');
+    }
+  });
+
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverTargets)) {
+      cur.classList.remove('hover');
+    }
+  });
+
+  // ─── Entry click ───
+  const entry = document.getElementById('entry');
+  const main  = document.getElementById('main');
+  const bgm   = document.getElementById('bgm');
+  const np    = document.getElementById('np');
+
+  entry.addEventListener('click', () => {
+    entry.classList.add('out');
+    bgm.volume = 0.55;
+    bgm.play().catch(() => {});
+    setTimeout(() => {
+      entry.style.display = 'none';
+      main.classList.add('on');
+      setTimeout(() => np.classList.add('show'), 900);
+    }, 390);
+  });
+
+  // ─── Commands ───
+  const CMDS = {
+    help:    `help &nbsp;&nbsp;&nbsp; — this list\nsocials — find me online\nmusic &nbsp;&nbsp; — now playing\nabout &nbsp;&nbsp; — who am i\nclear &nbsp;&nbsp; — clear output`,
+    socials: `github &nbsp;&nbsp; /axabit\ndiscord &nbsp; ax._on`,
+    music:   `playing: <span style="color:var(--blue)">set adrift</span>\n// on loop. forever.`,
+    about:   `axon. dev. i make things : )`,
+    clear:   '__clear__',
+  };
+
+  const inp = document.getElementById('cmdIn');
+  const out = document.getElementById('cmdOut');
+
+  inp.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const v = inp.value.trim().toLowerCase();
+    inp.value = '';
+    if (!v) return;
+    if (CMDS[v] === '__clear__') { out.style.display='none'; out.innerHTML=''; return; }
+    const r = CMDS[v] || `not found: ${v} — try <span style="color:var(--blue)">help</span>`;
+    out.style.display = 'none';
+    out.innerHTML = r.replace(/\n/g, '<br>');
+    void out.offsetHeight;
+    out.style.display = 'block';
+  });
+
+  // click main area = focus input
+  main.addEventListener('click', e => {
+    if (e.target !== inp) inp.focus();
+  });
+</script>
+</body>
+</html>
